@@ -134,7 +134,7 @@ impl Application {
         info!(challenge = ?challenge, "Got login challenge");
 
         let options: CredentialRequestOptions = challenge.into();
-        options.set_prf_first(b"hello world".as_ref())?;
+        options.set_prf_first(b"".as_ref())?;
 
         info!(options = ?options, "Got login options");
 
@@ -195,7 +195,7 @@ impl Application {
         info!(challenge = ?challenge, "Got registration challenge");
 
         let options: CredentialCreationOptions = challenge.into();
-        options.set_prf_first(b"hello world".as_ref())?;
+        options.set_prf_first(b"".as_ref())?;
 
         info!(options = ?options, "Got registration options");
 
