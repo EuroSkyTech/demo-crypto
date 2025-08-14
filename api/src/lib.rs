@@ -7,7 +7,7 @@ use webauthn_rs_proto::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StartRegistrationRequest {
-    pub username: String,
+    pub did: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ pub struct FinishRegistrationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StartAuthenticationRequest {
-    pub username: String,
+    pub did: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

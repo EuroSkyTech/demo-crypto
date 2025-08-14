@@ -9,6 +9,7 @@ use crate::error::{Error, Result};
 mod app;
 mod client;
 mod error;
+mod keygen;
 mod util;
 
 #[wasm_bindgen]

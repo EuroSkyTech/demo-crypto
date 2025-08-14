@@ -7,6 +7,7 @@ use api::{
     StartRegistrationRequest,
 };
 use gloo_events::EventListener;
+use ring::signature::KeyPair;
 use tracing::{error, info, instrument};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
@@ -17,6 +18,7 @@ use web_sys::{
 
 use crate::client::Client;
 use crate::error::{Context, Error, Result};
+use crate::keygen::Keygen;
 use crate::util::{CredentialOptionsExt, DocumentExt, PublicKeyCredentialExt, ValueExt};
 
 #[wasm_bindgen]
@@ -114,17 +116,17 @@ impl Application {
 
     #[instrument(skip(self))]
     async fn login_user(self: &Rc<Self>) -> Result<()> {
-        let username = self
+        let did = self
             .document
             .id("dceaf2f7-75b8-4e61-88d0-99d32797af8b")?
             .cast::<HtmlInputElement>()?
             .value();
 
-        info!(username = %username, "Login started");
+        info!(did = %did, "Login started");
 
         let res = self
             .client
-            .auth_start(StartAuthenticationRequest { username })
+            .auth_start(StartAuthenticationRequest { did: did.clone() })
             .await?;
 
         let challenge = res.challenge;
@@ -152,30 +154,40 @@ impl Application {
 
         info!(credential = ?credential, prf = ?prf, "Created credential, finishing login");
 
+        let keypair = Keygen::new().generate(&prf, did.as_bytes()).unwrap();
+
+        let pk = keypair.public_key().as_ref();
+        let pk_multibase = multibase::encode(multibase::Base::Base58Btc, pk);
+
+        info!(public_key = ?pk, public_key_multibase = %pk_multibase, "Generated keypair for login");
+
         self.client
             .auth_finish(FinishAuthenticationRequest {
                 credential: credential.into(),
             })
             .await?;
 
-        self.update_status("Login successful", "success")?;
+        self.update_status(
+            &format!("Login successful - public key: {}", pk_multibase),
+            "success",
+        )?;
 
         Ok(())
     }
 
     #[instrument(skip(self))]
     async fn register_user(self: &Rc<Self>) -> Result<()> {
-        let username = self
+        let did = self
             .document
             .id("dceaf2f7-75b8-4e61-88d0-99d32797af8b")?
             .cast::<HtmlInputElement>()?
             .value();
 
-        info!(username = %username, "Starting registration");
+        info!(did = %did, "Starting registration");
 
         let res = self
             .client
-            .register_start(StartRegistrationRequest { username })
+            .register_start(StartRegistrationRequest { did: did.clone() })
             .await?;
 
         let challenge = res.challenge;
@@ -201,7 +213,10 @@ impl Application {
         let credential = PublicKeyCredential::from(credential);
         let prf = credential.get_prf_first()?;
 
-        info!(credential = ?credential, prf = ?prf, "Created credential, finishing registration");
+        let keypair = Keygen::new().generate(&prf, did.as_bytes()).unwrap();
+
+        let pk = keypair.public_key().as_ref();
+        let pk_multibase = multibase::encode(multibase::Base::Base58Btc, pk);
 
         self.client
             .register_finish(FinishRegistrationRequest {
@@ -209,7 +224,10 @@ impl Application {
             })
             .await?;
 
-        self.update_status("Registration successful", "success")?;
+        self.update_status(
+            &format!("Registration successful - public key: {}", pk_multibase),
+            "success",
+        )?;
 
         Ok(())
     }

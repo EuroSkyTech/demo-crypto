@@ -29,7 +29,6 @@ struct AppState {
 type Username = String;
 
 struct User {
-    keypkg: Option<[u8; 64]>,
     id: Uuid,
     passkey: Option<Passkey>,
 }
@@ -183,7 +182,7 @@ impl App {
         let (challenge, authentication, user_id) = {
             let database = state.database.lock().map_err(Error::from_poison)?;
 
-            let user = database.get(&req.username).context("no such user")?;
+            let user = database.get(&req.did).context("no such user")?;
             let passkey = user.passkey.as_ref().context("user has no passkey")?;
 
             let (challenge, authentication) = state
@@ -240,7 +239,7 @@ impl App {
 
         let (challenge, registration) = state
             .webauthn
-            .start_passkey_registration(user_id, &req.username, &req.username, None)
+            .start_passkey_registration(user_id, &req.did, &req.did, None)
             .context("failed to start passkey registration")?;
 
         session
@@ -252,12 +251,11 @@ impl App {
 
         let mut database = state.database.lock().map_err(Error::from_poison)?;
 
-        let name = req.username.clone();
+        let name = req.did.clone();
 
         if let Entry::Vacant(entry) = database.entry(name.clone()) {
             entry.insert(User {
                 id: user_id,
-                keypkg: None,
                 passkey: None,
             });
 
