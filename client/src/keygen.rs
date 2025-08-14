@@ -33,7 +33,14 @@ impl Keygen {
         let rng = SystemRandom::new();
 
         for n in 0..8 {
-            let info = [b"round".as_ref(), &[n], b"did".as_ref(), &did];
+            let info = [
+                b"round".as_ref(),
+                &[n],
+                b"did".as_ref(),
+                &did,
+                b"key-type".as_ref(),
+                b"signing".as_ref(),
+            ];
 
             let okm = prk
                 .expand(&info, P256)
